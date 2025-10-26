@@ -35,7 +35,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Follow Us</h4>
             <div className="flex gap-4">
-              <a href="#" className="hover:text-accent transition-colors">
+              <a href="https://www.instagram.com/belle_westernwear" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">
                 <Instagram className="h-6 w-6" />
               </a>
               <a href="#" className="hover:text-accent transition-colors">
