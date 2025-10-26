@@ -24,7 +24,7 @@ const ProductCard = ({ image, name, code, price }: ProductCardProps) => {
             {name}
           </h3>
           <p className="text-sm text-muted-foreground">Product Code: {code}</p>
-          <p className="text-lg font-bold text-accent">${price}</p>
+          <p className="text-lg font-bold text-accent">PKR {price.toLocaleString()}</p>
         </div>
       </CardContent>
     </Card>

@@ -5,14 +5,14 @@ import product3 from "@/assets/product-3.jpg";
 import product4 from "@/assets/product-4.jpg";
 
 const products = [
-  { id: 1, image: product1, name: "Aurora", code: "BLE23301", price: 250 },
-  { id: 2, image: product2, name: "Eclipse", code: "BLE23302", price: 180 },
-  { id: 3, image: product3, name: "Celeste", code: "BLE23303", price: 90 },
-  { id: 4, image: product4, name: "Dakota", code: "BLE23304", price: 149 },
-  { id: 5, image: product1, name: "Savannah", code: "BLE23305", price: 220 },
-  { id: 6, image: product3, name: "Phoenix", code: "BLE23306", price: 95 },
-  { id: 7, image: product2, name: "Sierra", code: "BLE23307", price: 175 },
-  { id: 8, image: product4, name: "Montana", code: "BLE23308", price: 145 },
+  { id: 1, image: product1, name: "Aurora", code: "BLE23301", price: 12500 },
+  { id: 2, image: product2, name: "Eclipse", code: "BLE23302", price: 9500 },
+  { id: 3, image: product3, name: "Celeste", code: "BLE23303", price: 4500 },
+  { id: 4, image: product4, name: "Dakota", code: "BLE23304", price: 7500 },
+  { id: 5, image: product1, name: "Savannah", code: "BLE23305", price: 11000 },
+  { id: 6, image: product3, name: "Phoenix", code: "BLE23306", price: 4750 },
+  { id: 7, image: product2, name: "Sierra", code: "BLE23307", price: 8750 },
+  { id: 8, image: product4, name: "Montana", code: "BLE23308", price: 7250 },
 ];
 
 const BestSellers = () => {
