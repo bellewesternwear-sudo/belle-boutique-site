@@ -1,7 +1,11 @@
-import { Search, ShoppingBag, Menu, User, Package } from "lucide-react";
+import { Search, ShoppingBag, Menu, User, Package, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const Header = () => {
+  const { isAdmin } = useAdminCheck();
+
   return (
     <>
       <div className="bg-accent text-background py-2 text-center text-sm font-medium">
@@ -29,15 +33,24 @@ const Header = () => {
               <Button variant="ghost" size="icon">
                 <Search className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
+              <Link to="/auth">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingBag className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   0
                 </span>
               </Button>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon" title="Admin Portal">
+                    <Shield className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
