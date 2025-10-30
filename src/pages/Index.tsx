@@ -4,6 +4,7 @@ import BestSellers from "@/components/BestSellers";
 import StorySection from "@/components/StorySection";
 import CollectionSection from "@/components/CollectionSection";
 import Footer from "@/components/Footer";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const Index = () => {
   return (
@@ -16,6 +17,7 @@ const Index = () => {
         <CollectionSection />
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 };
