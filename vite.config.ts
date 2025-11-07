@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: "/belle-boutique-site/", // 👈 This is the key addition
   server: {
     host: "::",
     port: 8080,
