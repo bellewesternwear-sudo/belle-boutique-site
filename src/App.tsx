@@ -15,7 +15,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/belle-boutique-site">
+      <BrowserRouter basename={(import.meta.env.BASE_URL.endsWith("/") && import.meta.env.BASE_URL !== "/") ? import.meta.env.BASE_URL.slice(0, -1) : import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
