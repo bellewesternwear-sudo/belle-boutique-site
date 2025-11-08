@@ -1,21 +1,51 @@
+import { useEffect, useState } from "react";
 import ProductCard from "./ProductCard";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import product1 from "@/assets/product-1.jpg";
-import product2 from "@/assets/product-2.jpg";
-import product3 from "@/assets/product-3.jpg";
-import product4 from "@/assets/product-4.jpg";
 
-const products = [
-  { id: 1, image: product1, name: "Aurora", code: "BLE23301", price: 12500 },
-  { id: 2, image: product2, name: "Eclipse", code: "BLE23302", price: 9500 },
-  { id: 3, image: product3, name: "Celeste", code: "BLE23303", price: 4500 },
-  { id: 4, image: product4, name: "Dakota", code: "BLE23304", price: 7500 },
-  { id: 5, image: product1, name: "Savannah", code: "BLE23305", price: 11000 },
-  { id: 6, image: product3, name: "Phoenix", code: "BLE23306", price: 4750 },
-  { id: 7, image: product2, name: "Sierra", code: "BLE23307", price: 8750 },
-  { id: 8, image: product4, name: "Montana", code: "BLE23308", price: 7250 },
-];
+interface Product {
+  id: string;
+  name: string;
+  code: string;
+  price: number;
+  image_url: string | null;
+}
 
 const BestSellers = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setProducts(data || []);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-20 px-4">
+        <div className="container mx-auto flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">
@@ -26,11 +56,23 @@ const BestSellers = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-        </div>
+        {products.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg">No products available yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {products.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                image={product.image_url || product1}
+                name={product.name}
+                code={product.code}
+                price={product.price}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
