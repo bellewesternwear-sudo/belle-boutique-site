@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -47,17 +47,18 @@ const ManageProducts = () => {
   const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!adminLoading && !user) {
-      navigate("/auth");
+      navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
     } else if (!adminLoading && user && !isAdmin) {
       navigate("/");
     }
-  }, [user, isAdmin, adminLoading, navigate]);
+  }, [user, isAdmin, adminLoading, navigate, location]);
 
   useEffect(() => {
     fetchProducts();

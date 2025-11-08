@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -30,13 +30,14 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!adminLoading && !user) {
-      navigate("/auth");
+      navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
     } else if (!adminLoading && user && !isAdmin) {
       toast({
         title: "Access Denied",
@@ -45,7 +46,7 @@ const Admin = () => {
       });
       navigate("/");
     }
-  }, [user, isAdmin, adminLoading, navigate, toast]);
+  }, [user, isAdmin, adminLoading, navigate, location, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

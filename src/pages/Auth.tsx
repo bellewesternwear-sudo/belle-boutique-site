@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,16 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate(redirect);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirect]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +72,7 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
-          navigate("/");
+          navigate(redirect);
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
