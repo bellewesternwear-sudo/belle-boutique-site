@@ -75,7 +75,14 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
-          navigate(redirect);
+          // SPA navigate first
+          navigate(redirect, { replace: true });
+          // Fallback to full reload if navigation is blocked
+          setTimeout(() => {
+            if (window.location.pathname === "/auth") {
+              window.location.assign(redirect);
+            }
+          }, 150);
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
