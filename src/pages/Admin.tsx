@@ -36,15 +36,29 @@ const Admin = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!adminLoading && !user) {
+    if (adminLoading) return;
+
+    if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
-    } else if (!adminLoading && user && !isAdmin) {
+      return;
+    }
+
+    if (user && !isAdmin) {
       toast({
-        title: "Access Denied",
-        description: "You don't have admin privileges",
+        title: "Admin access required",
+        description: "Please sign in with an admin account to continue.",
         variant: "destructive",
       });
-      navigate("/");
+      // Force logout then redirect to auth so the login form appears instead of bouncing back home
+      (async () => {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          // ignore
+        } finally {
+          navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
+        }
+      })();
     }
   }, [user, isAdmin, adminLoading, navigate, location, toast]);
 
