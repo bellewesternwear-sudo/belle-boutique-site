@@ -29,13 +29,33 @@ const Auth = () => {
   useEffect(() => {
     if (!user) return;
     const isDefaultRedirect = redirect === "/";
-    const dest = isDefaultRedirect ? (isAdmin ? "/admin" : "/") : redirect;
-    const absoluteDest = dest.startsWith("http")
-      ? dest
-      : `${window.location.origin}${dest.startsWith("/") ? dest : `/${dest}`}`;
-    navigate(dest, { replace: true });
+    const requested = isDefaultRedirect ? "/" : redirect;
+
+    const normalizePath = (p: string) => {
+      if (!p) return "/";
+      if (p.startsWith("http")) return p;
+      return p.startsWith("/") ? p : `/${p}`;
+    };
+
+    const adminOnlyPaths = ["/admin", "/manage-products"];
+    let destPath = normalizePath(requested);
+    const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
+
+    if (!isAdmin && isAdminOnlyTarget) {
+      destPath = "/";
+    }
+
+    if (isDefaultRedirect) {
+      destPath = isAdmin ? "/admin" : "/";
+    }
+
+    const absoluteDest = destPath.startsWith("http")
+      ? destPath
+      : `${window.location.origin}${destPath}`;
+
+    navigate(destPath, { replace: true });
     setTimeout(() => {
-      if (window.location.pathname.startsWith("/auth")) {
+      if (window.location.pathname.includes("/auth")) {
         window.location.replace(absoluteDest);
       }
     }, 250);
@@ -83,14 +103,29 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
+          // Determine safe destination
+          const requested = redirect || "/";
+          const normalizePath = (p: string) => {
+            if (!p) return "/";
+            if (p.startsWith("http")) return p;
+            return p.startsWith("/") ? p : `/${p}`;
+          };
+          const adminOnlyPaths = ["/admin", "/manage-products"];
+          let destPath = normalizePath(requested);
+          const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
+          if (!isAdmin && isAdminOnlyTarget) {
+            destPath = "/";
+          }
+
           // SPA navigate first
-          navigate(redirect, { replace: true });
+          navigate(destPath, { replace: true });
+
           // Fallback to full reload if navigation is blocked
-          const absoluteDest = redirect.startsWith("http")
-            ? redirect
-            : `${window.location.origin}${redirect.startsWith("/") ? redirect : `/${redirect}`}`;
+          const absoluteDest = destPath.startsWith("http")
+            ? destPath
+            : `${window.location.origin}${destPath}`;
           setTimeout(() => {
-            if (window.location.pathname.startsWith("/auth")) {
+            if (window.location.pathname.includes("/auth")) {
               window.location.replace(absoluteDest);
             }
           }, 250);
