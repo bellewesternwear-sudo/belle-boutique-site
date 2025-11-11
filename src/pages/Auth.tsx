@@ -30,7 +30,15 @@ const Auth = () => {
     if (!user) return;
     const isDefaultRedirect = redirect === "/";
     const dest = isDefaultRedirect ? (isAdmin ? "/admin" : "/") : redirect;
+    const absoluteDest = dest.startsWith("http")
+      ? dest
+      : `${window.location.origin}${dest.startsWith("/") ? dest : `/${dest}`}`;
     navigate(dest, { replace: true });
+    setTimeout(() => {
+      if (window.location.pathname.startsWith("/auth")) {
+        window.location.replace(absoluteDest);
+      }
+    }, 250);
   }, [user, isAdmin, redirect, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -78,11 +86,14 @@ const Auth = () => {
           // SPA navigate first
           navigate(redirect, { replace: true });
           // Fallback to full reload if navigation is blocked
+          const absoluteDest = redirect.startsWith("http")
+            ? redirect
+            : `${window.location.origin}${redirect.startsWith("/") ? redirect : `/${redirect}`}`;
           setTimeout(() => {
-            if (window.location.pathname === "/auth") {
-              window.location.assign(redirect);
+            if (window.location.pathname.startsWith("/auth")) {
+              window.location.replace(absoluteDest);
             }
-          }, 150);
+          }, 250);
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
