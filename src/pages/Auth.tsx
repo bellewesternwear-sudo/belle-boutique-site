@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,13 +23,15 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      navigate(redirect);
-    }
-  }, [user, navigate, redirect]);
+    if (!user) return;
+    const isDefaultRedirect = redirect === "/";
+    const dest = isDefaultRedirect ? (isAdmin ? "/admin" : "/") : redirect;
+    navigate(dest, { replace: true });
+  }, [user, isAdmin, redirect, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
