@@ -23,13 +23,13 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
   const { user } = useAuth();
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!user) return;
-    const isDefaultRedirect = redirect === "/";
-    const requested = isDefaultRedirect ? "/" : redirect;
+
+    const requested = redirect || "/";
 
     const normalizePath = (p: string) => {
       if (!p) return "/";
@@ -41,20 +41,20 @@ const Auth = () => {
     let destPath = normalizePath(requested);
     const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
 
-    // If user is logged in but is not admin and target is admin-only,
-    // sign out and stay on auth so they can switch accounts.
-    if (!isAdmin && isAdminOnlyTarget) {
-      toast({
-        title: "Admin access required",
-        description: "Please sign in with an admin account to continue.",
-        variant: "destructive",
-      });
-      // Fire and forget sign out to avoid race conditions, do not navigate away
-      supabase.auth.signOut().catch(() => {});
+    // If target is admin-only, navigate there and let the Admin page enforce access
+    if (isAdminOnlyTarget) {
+      navigate(destPath, { replace: true });
+      setTimeout(() => {
+        if (window.location.pathname.includes("/auth")) {
+          const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
+          window.location.replace(absoluteDest);
+        }
+      }, 150);
       return;
     }
 
-    if (isDefaultRedirect) {
+    // For default redirect, prefer admins to land on /admin after loading resolves
+    if (requested === "/" && !adminLoading) {
       destPath = isAdmin ? "/admin" : "/";
     }
 
@@ -67,8 +67,8 @@ const Auth = () => {
       if (window.location.pathname.includes("/auth")) {
         window.location.replace(absoluteDest);
       }
-    }, 250);
-  }, [user, isAdmin, redirect, navigate, toast]);
+    }, 150);
+  }, [user, isAdmin, adminLoading, redirect, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +112,7 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
-          // Determine safe destination
+          // Post-login redirect
           const requested = redirect || "/";
           const normalizePath = (p: string) => {
             if (!p) return "/";
@@ -122,22 +122,29 @@ const Auth = () => {
           const adminOnlyPaths = ["/admin", "/manage-products"];
           let destPath = normalizePath(requested);
           const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
-          if (!isAdmin && isAdminOnlyTarget) {
-            destPath = "/";
-          }
 
-          // SPA navigate first
-          navigate(destPath, { replace: true });
-
-          // Fallback to full reload if navigation is blocked
-          const absoluteDest = destPath.startsWith("http")
-            ? destPath
-            : `${window.location.origin}${destPath}`;
-          setTimeout(() => {
-            if (window.location.pathname.includes("/auth")) {
-              window.location.replace(absoluteDest);
+          // If target is admin-only, go there directly and let the Admin page enforce access.
+          if (isAdminOnlyTarget) {
+            navigate(destPath, { replace: true });
+            const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
+            setTimeout(() => {
+              if (window.location.pathname.includes("/auth")) {
+                window.location.replace(absoluteDest);
+              }
+            }, 150);
+          } else {
+            // Otherwise prefer admins to land on /admin when no explicit redirect
+            if (requested === "/" && !adminLoading) {
+              destPath = isAdmin ? "/admin" : "/";
             }
-          }, 250);
+            navigate(destPath, { replace: true });
+            const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
+            setTimeout(() => {
+              if (window.location.pathname.includes("/auth")) {
+                window.location.replace(absoluteDest);
+              }
+            }, 150);
+          }
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
