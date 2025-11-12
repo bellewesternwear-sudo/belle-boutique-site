@@ -41,8 +41,17 @@ const Auth = () => {
     let destPath = normalizePath(requested);
     const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
 
+    // If user is logged in but is not admin and target is admin-only,
+    // sign out and stay on auth so they can switch accounts.
     if (!isAdmin && isAdminOnlyTarget) {
-      destPath = "/";
+      toast({
+        title: "Admin access required",
+        description: "Please sign in with an admin account to continue.",
+        variant: "destructive",
+      });
+      // Fire and forget sign out to avoid race conditions, do not navigate away
+      supabase.auth.signOut().catch(() => {});
+      return;
     }
 
     if (isDefaultRedirect) {
@@ -59,7 +68,7 @@ const Auth = () => {
         window.location.replace(absoluteDest);
       }
     }, 250);
-  }, [user, isAdmin, redirect, navigate]);
+  }, [user, isAdmin, redirect, navigate, toast]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
