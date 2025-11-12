@@ -27,7 +27,7 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || adminLoading) return; // Wait for admin check to complete
 
     const requested = redirect || "/";
 
@@ -41,7 +41,7 @@ const Auth = () => {
     let destPath = normalizePath(requested);
     const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
 
-    // If target is admin-only, navigate there and let the Admin page enforce access
+    // If target is admin-only, navigate there directly
     if (isAdminOnlyTarget) {
       navigate(destPath, { replace: true });
       setTimeout(() => {
@@ -49,12 +49,12 @@ const Auth = () => {
           const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
           window.location.replace(absoluteDest);
         }
-      }, 150);
+      }, 100);
       return;
     }
 
-    // For default redirect, prefer admins to land on /admin after loading resolves
-    if (requested === "/" && !adminLoading) {
+    // For default redirect, prefer admins to land on /admin
+    if (requested === "/") {
       destPath = isAdmin ? "/admin" : "/";
     }
 
@@ -67,7 +67,7 @@ const Auth = () => {
       if (window.location.pathname.includes("/auth")) {
         window.location.replace(absoluteDest);
       }
-    }, 150);
+    }, 100);
   }, [user, isAdmin, adminLoading, redirect, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -112,39 +112,7 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
-          // Post-login redirect
-          const requested = redirect || "/";
-          const normalizePath = (p: string) => {
-            if (!p) return "/";
-            if (p.startsWith("http")) return p;
-            return p.startsWith("/") ? p : `/${p}`;
-          };
-          const adminOnlyPaths = ["/admin", "/manage-products"];
-          let destPath = normalizePath(requested);
-          const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
-
-          // If target is admin-only, go there directly and let the Admin page enforce access.
-          if (isAdminOnlyTarget) {
-            navigate(destPath, { replace: true });
-            const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
-            setTimeout(() => {
-              if (window.location.pathname.includes("/auth")) {
-                window.location.replace(absoluteDest);
-              }
-            }, 150);
-          } else {
-            // Otherwise prefer admins to land on /admin when no explicit redirect
-            if (requested === "/" && !adminLoading) {
-              destPath = isAdmin ? "/admin" : "/";
-            }
-            navigate(destPath, { replace: true });
-            const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
-            setTimeout(() => {
-              if (window.location.pathname.includes("/auth")) {
-                window.location.replace(absoluteDest);
-              }
-            }, 150);
-          }
+          // Let the useEffect handle redirect after admin status loads
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
