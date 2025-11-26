@@ -31,36 +31,29 @@ const Admin = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (adminLoading) return;
+    // Wait for BOTH auth AND admin check to complete
+    if (authLoading || adminLoading) return;
 
     if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
       return;
     }
 
-    if (user && !isAdmin) {
+    // Only redirect if we're CERTAIN user is not admin (no sign out!)
+    if (!isAdmin) {
       toast({
-        title: "Admin access required",
-        description: "Please sign in with an admin account to continue.",
+        title: "Access Denied",
+        description: "You need admin privileges to access this page.",
         variant: "destructive",
       });
-      // Force logout then redirect to auth so the login form appears instead of bouncing back home
-      (async () => {
-        try {
-          await supabase.auth.signOut();
-        } catch (e) {
-          // ignore
-        } finally {
-          navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
-        }
-      })();
+      navigate("/");
     }
-  }, [user, isAdmin, adminLoading, navigate, location, toast]);
+  }, [user, isAdmin, authLoading, adminLoading, navigate, location, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -180,7 +173,7 @@ const Admin = () => {
     }
   };
 
-  if (adminLoading) {
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
