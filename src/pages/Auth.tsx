@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,11 +22,10 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
   const { user } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user || adminLoading) return; // Wait for admin check to complete
+    if (!user) return;
 
     const requested = redirect || "/";
 
@@ -37,38 +35,9 @@ const Auth = () => {
       return p.startsWith("/") ? p : `/${p}`;
     };
 
-    const adminOnlyPaths = ["/admin", "/manage-products"];
-    let destPath = normalizePath(requested);
-    const isAdminOnlyTarget = !destPath.startsWith("http") && adminOnlyPaths.some(p => destPath.startsWith(p));
-
-    // If target is admin-only, navigate there directly
-    if (isAdminOnlyTarget) {
-      navigate(destPath, { replace: true });
-      setTimeout(() => {
-        if (window.location.pathname.includes("/auth")) {
-          const absoluteDest = destPath.startsWith("http") ? destPath : `${window.location.origin}${destPath}`;
-          window.location.replace(absoluteDest);
-        }
-      }, 100);
-      return;
-    }
-
-    // For default redirect, prefer admins to land on /admin
-    if (requested === "/") {
-      destPath = isAdmin ? "/admin" : "/";
-    }
-
-    const absoluteDest = destPath.startsWith("http")
-      ? destPath
-      : `${window.location.origin}${destPath}`;
-
+    const destPath = normalizePath(requested);
     navigate(destPath, { replace: true });
-    setTimeout(() => {
-      if (window.location.pathname.includes("/auth")) {
-        window.location.replace(absoluteDest);
-      }
-    }, 100);
-  }, [user, isAdmin, adminLoading, redirect, navigate]);
+  }, [user, redirect, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
