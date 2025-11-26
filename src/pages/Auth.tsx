@@ -81,7 +81,16 @@ const Auth = () => {
             title: "Success",
             description: "Logged in successfully!",
           });
-          // Let the useEffect handle redirect after admin status loads
+
+          // Redirect immediately based on ?redirect= or default "/"
+          const requested = redirect || "/";
+          const normalizePath = (p: string) => {
+            if (!p) return "/";
+            if (p.startsWith("http")) return p;
+            return p.startsWith("/") ? p : `/${p}`;
+          };
+          const destPath = normalizePath(requested);
+          navigate(destPath, { replace: true });
         }
       } else {
         const redirectUrl = `${window.location.origin}/`;
