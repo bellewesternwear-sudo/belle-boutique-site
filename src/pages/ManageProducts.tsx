@@ -48,17 +48,23 @@ const ManageProducts = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!adminLoading && !user) {
+    // Wait for BOTH auth AND admin check to complete
+    if (authLoading || adminLoading) return;
+
+    if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`);
-    } else if (!adminLoading && user && !isAdmin) {
+      return;
+    }
+
+    if (!isAdmin) {
       navigate("/");
     }
-  }, [user, isAdmin, adminLoading, navigate, location]);
+  }, [user, isAdmin, authLoading, adminLoading, navigate, location]);
 
   useEffect(() => {
     fetchProducts();
@@ -165,7 +171,7 @@ const ManageProducts = () => {
     }
   };
 
-  if (adminLoading || loading) {
+  if (authLoading || adminLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
