@@ -29,27 +29,29 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch product count
-      const { count: productCount } = await supabase
+      // Fetch all products to get stats
+      const { data: products, error } = await supabase
         .from("products")
-        .select("*", { count: "exact", head: true });
+        .select("id, name, category, created_at")
+        .order("created_at", { ascending: false });
 
-      // Fetch category count
-      const { count: categoryCount } = await supabase
-        .from("categories")
-        .select("*", { count: "exact", head: true });
+      if (error) throw error;
 
-      // Fetch recent products
-      const { data: recentProducts } = await supabase
-        .from("products")
-        .select("id, name, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5);
+      const productList = products || [];
+      
+      // Count unique categories
+      const uniqueCategories = new Set(
+        productList.map((p) => p.category).filter((c): c is string => !!c)
+      );
 
       setStats({
-        totalProducts: productCount || 0,
-        totalCategories: categoryCount || 0,
-        recentProducts: recentProducts || [],
+        totalProducts: productList.length,
+        totalCategories: uniqueCategories.size,
+        recentProducts: productList.slice(0, 5).map((p) => ({
+          id: p.id,
+          name: p.name,
+          created_at: p.created_at || new Date().toISOString(),
+        })),
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
