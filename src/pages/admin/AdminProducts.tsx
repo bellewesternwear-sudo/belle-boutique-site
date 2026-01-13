@@ -38,13 +38,7 @@ interface Product {
   price: number;
   description: string | null;
   category: string | null;
-  category_id: string | null;
   image_url: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
 }
 
 const productSchema = z.object({
@@ -52,12 +46,12 @@ const productSchema = z.object({
   code: z.string().trim().min(1, "Product code is required").max(50),
   price: z.number().positive("Price must be greater than 0").max(10000000),
   description: z.string().trim().max(1000).optional(),
-  category_id: z.string().uuid().optional().nullable(),
+  category: z.string().trim().max(100).optional().nullable(),
 });
 
 const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -72,7 +66,7 @@ const AdminProducts = () => {
     code: "",
     price: "",
     description: "",
-    category_id: "",
+    category: "",
   });
   const [image, setImage] = useState<File | null>(null);
 
@@ -80,7 +74,6 @@ const AdminProducts = () => {
 
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -91,7 +84,15 @@ const AdminProducts = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      
+      const productData = data || [];
+      setProducts(productData);
+      
+      // Extract unique categories
+      const uniqueCategories = Array.from(
+        new Set(productData.map((p) => p.category).filter((c): c is string => !!c))
+      ).sort();
+      setCategories(uniqueCategories);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast({
@@ -104,28 +105,14 @@ const AdminProducts = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name")
-        .order("sort_order", { ascending: true });
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
-
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
       categoryFilter === "all" ||
-      p.category_id === categoryFilter ||
-      (!p.category_id && categoryFilter === "uncategorized");
+      p.category === categoryFilter ||
+      (!p.category && categoryFilter === "uncategorized");
     return matchesSearch && matchesCategory;
   });
 
@@ -136,7 +123,7 @@ const AdminProducts = () => {
       code: "",
       price: "",
       description: "",
-      category_id: "",
+      category: "",
     });
     setImage(null);
     setIsDialogOpen(true);
@@ -149,7 +136,7 @@ const AdminProducts = () => {
       code: product.code,
       price: product.price.toString(),
       description: product.description || "",
-      category_id: product.category_id || "",
+      category: product.category || "",
     });
     setImage(null);
     setIsDialogOpen(true);
@@ -188,7 +175,7 @@ const AdminProducts = () => {
         code: formData.code.trim(),
         price: priceNum,
         description: formData.description.trim() || undefined,
-        category_id: formData.category_id || null,
+        category: formData.category.trim() || null,
       });
 
       if (!validation.success) {
@@ -226,7 +213,7 @@ const AdminProducts = () => {
         code: formData.code.trim(),
         price: priceNum,
         description: formData.description.trim() || null,
-        category_id: formData.category_id || null,
+        category: formData.category.trim() || null,
         image_url: imageUrl,
       };
 
@@ -285,12 +272,6 @@ const AdminProducts = () => {
     }
   };
 
-  const getCategoryName = (categoryId: string | null) => {
-    if (!categoryId) return "—";
-    const category = categories.find((c) => c.id === categoryId);
-    return category?.name || "—";
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -332,8 +313,8 @@ const AdminProducts = () => {
             <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="uncategorized">Uncategorized</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
+              <SelectItem key={cat} value={cat}>
+                {cat}
               </SelectItem>
             ))}
           </SelectContent>
@@ -377,7 +358,7 @@ const AdminProducts = () => {
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.code}</TableCell>
-                  <TableCell>{getCategoryName(product.category_id)}</TableCell>
+                  <TableCell>{product.category || "—"}</TableCell>
                   <TableCell>PKR {product.price.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -467,23 +448,21 @@ const AdminProducts = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category_id: value })
+                <Input
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="e.g., Kurtis"
+                  maxLength={100}
+                  list="category-suggestions"
+                />
+                <datalist id="category-suggestions">
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -509,13 +488,25 @@ const AdminProducts = () => {
                 accept="image/*"
                 onChange={handleImageChange}
               />
+              <p className="text-xs text-muted-foreground">
+                Max 5MB. Recommended: 800x800px
+              </p>
               {image && (
-                <p className="text-sm text-muted-foreground">{image.name}</p>
+                <p className="text-sm text-accent">
+                  Selected: {image.name}
+                </p>
               )}
               {editingProduct?.image_url && !image && (
-                <p className="text-sm text-muted-foreground">
-                  Current image will be kept
-                </p>
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Current image:
+                  </p>
+                  <img
+                    src={editingProduct.image_url}
+                    alt="Current"
+                    className="w-24 h-24 object-cover rounded"
+                  />
+                </div>
               )}
             </div>
           </div>

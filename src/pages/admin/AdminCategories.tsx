@@ -20,15 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { z } from "zod";
 
-interface Category {
-  id: string;
+interface CategoryInfo {
   name: string;
-  slug: string;
-  sort_order: number;
-  created_at: string;
+  productCount: number;
 }
 
 const categorySchema = z.object({
@@ -36,13 +33,14 @@ const categorySchema = z.object({
 });
 
 const AdminCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingName, setDeletingName] = useState<string | null>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [originalName, setOriginalName] = useState("");
 
   const { toast } = useToast();
 
@@ -53,12 +51,24 @@ const AdminCategories = () => {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .order("sort_order", { ascending: true });
+        .from("products")
+        .select("category");
 
       if (error) throw error;
-      setCategories(data || []);
+
+      // Extract unique categories and count products
+      const categoryMap = new Map<string, number>();
+      (data || []).forEach((product) => {
+        const cat = product.category || "Uncategorized";
+        categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+      });
+
+      const categoryList: CategoryInfo[] = Array.from(categoryMap.entries())
+        .filter(([name]) => name !== "Uncategorized")
+        .map(([name, productCount]) => ({ name, productCount }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setCategories(categoryList);
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast({
@@ -71,24 +81,17 @@ const AdminCategories = () => {
     }
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
-  };
-
   const openAddDialog = () => {
     setEditingCategory(null);
+    setOriginalName("");
     setCategoryName("");
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (category: Category) => {
-    setEditingCategory(category);
-    setCategoryName(category.name);
+  const openEditDialog = (categoryName: string) => {
+    setEditingCategory(categoryName);
+    setOriginalName(categoryName);
+    setCategoryName(categoryName);
     setIsDialogOpen(true);
   };
 
@@ -108,31 +111,32 @@ const AdminCategories = () => {
         return;
       }
 
-      const slug = generateSlug(categoryName);
+      const trimmedName = categoryName.trim();
+
+      // Check for duplicate
+      if (categories.some((c) => c.name.toLowerCase() === trimmedName.toLowerCase() && c.name !== originalName)) {
+        toast({
+          title: "Error",
+          description: "Category name already exists",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
       if (editingCategory) {
+        // Update all products with the old category name
         const { error } = await supabase
-          .from("categories")
-          .update({ name: categoryName.trim(), slug })
-          .eq("id", editingCategory.id);
+          .from("products")
+          .update({ category: trimmedName })
+          .eq("category", originalName);
 
         if (error) throw error;
         toast({ title: "Success", description: "Category updated!" });
       } else {
-        const maxOrder = Math.max(...categories.map((c) => c.sort_order), 0);
-        const { error } = await supabase.from("categories").insert({
-          name: categoryName.trim(),
-          slug,
-          sort_order: maxOrder + 1,
-        });
-
-        if (error) {
-          if (error.message.includes("duplicate key") || error.message.includes("unique")) {
-            throw new Error("Category name already exists");
-          }
-          throw error;
-        }
-        toast({ title: "Success", description: "Category added!" });
+        // For adding a new category, we just need to confirm it doesn't exist
+        // The category will be used when adding products
+        toast({ title: "Success", description: "Category created! You can now assign products to it." });
       }
 
       setIsDialogOpen(false);
@@ -148,12 +152,23 @@ const AdminCategories = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category? Products in this category will become uncategorized.")) return;
+  const handleDelete = async (name: string) => {
+    const category = categories.find((c) => c.name === name);
+    if (category && category.productCount > 0) {
+      if (!confirm(`This category has ${category.productCount} product(s). Deleting will set their category to "Uncategorized". Continue?`)) {
+        return;
+      }
+    } else {
+      if (!confirm("Are you sure you want to delete this category?")) return;
+    }
 
-    setDeletingId(id);
+    setDeletingName(name);
     try {
-      const { error } = await supabase.from("categories").delete().eq("id", id);
+      // Set all products with this category to null
+      const { error } = await supabase
+        .from("products")
+        .update({ category: null })
+        .eq("category", name);
 
       if (error) throw error;
 
@@ -166,7 +181,7 @@ const AdminCategories = () => {
         variant: "destructive",
       });
     } finally {
-      setDeletingId(null);
+      setDeletingName(null);
     }
   };
 
@@ -197,45 +212,39 @@ const AdminCategories = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12"></TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Order</TableHead>
+              <TableHead>Products</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {categories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                   No categories yet. Add your first category!
                 </TableCell>
               </TableRow>
             ) : (
               categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell>
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                  </TableCell>
+                <TableRow key={category.name}>
                   <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{category.slug}</TableCell>
-                  <TableCell>{category.sort_order}</TableCell>
+                  <TableCell>{category.productCount} products</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openEditDialog(category)}
+                        onClick={() => openEditDialog(category.name)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleDelete(category.id)}
-                        disabled={deletingId === category.id}
+                        onClick={() => handleDelete(category.name)}
+                        disabled={deletingName === category.name}
                       >
-                        {deletingId === category.id ? (
+                        {deletingName === category.name ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
@@ -258,7 +267,7 @@ const AdminCategories = () => {
             </DialogTitle>
             <DialogDescription>
               {editingCategory
-                ? "Update category name below."
+                ? "Update category name below. All products in this category will be updated."
                 : "Enter a name for the new category."}
             </DialogDescription>
           </DialogHeader>
@@ -274,11 +283,6 @@ const AdminCategories = () => {
                 maxLength={100}
               />
             </div>
-            {categoryName && (
-              <p className="text-sm text-muted-foreground">
-                Slug: {generateSlug(categoryName)}
-              </p>
-            )}
           </div>
 
           <DialogFooter>
