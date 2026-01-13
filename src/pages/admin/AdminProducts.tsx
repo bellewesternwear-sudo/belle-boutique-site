@@ -448,21 +448,27 @@ const AdminProducts = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
+                <Select
+                  value={formData.category || "none"}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, category: value === "none" ? "" : value })
                   }
-                  placeholder="e.g., Kurtis"
-                  maxLength={100}
-                  list="category-suggestions"
-                />
-                <datalist id="category-suggestions">
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Category</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Add categories in the Categories section first
+                </p>
               </div>
             </div>
 
