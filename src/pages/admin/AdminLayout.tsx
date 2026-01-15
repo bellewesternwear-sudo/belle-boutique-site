@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, LayoutDashboard, Package, FolderTree, LogOut, Home } from "lucide-react";
+import { Loader2, LayoutDashboard, Package, FolderTree, Settings, LogOut, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -23,6 +23,7 @@ const navItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Categories", url: "/admin/categories", icon: FolderTree },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 const AdminLayout = () => {
