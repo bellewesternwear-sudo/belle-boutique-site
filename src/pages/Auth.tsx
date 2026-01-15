@@ -15,6 +15,7 @@ const authSchema = z.object({
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -135,6 +136,90 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Check Your Email",
+        description: "We've sent you a password reset link. Please check your email.",
+      });
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset email",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="font-serif text-4xl mb-2">BELLE</h1>
+            <p className="text-muted-foreground">
+              Reset your password
+            </p>
+          </div>
+
+          <form onSubmit={handleForgotPassword} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                maxLength={255}
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll send you a link to reset your password
+              </p>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Sending..." : "Send Reset Link"}
+            </Button>
+          </form>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(false)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
@@ -160,7 +245,18 @@ const Auth = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <Input
               id="password"
               type="password"

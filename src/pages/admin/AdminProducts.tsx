@@ -74,6 +74,7 @@ const AdminProducts = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -85,14 +86,7 @@ const AdminProducts = () => {
 
       if (error) throw error;
       
-      const productData = data || [];
-      setProducts(productData);
-      
-      // Extract unique categories
-      const uniqueCategories = Array.from(
-        new Set(productData.map((p) => p.category).filter((c): c is string => !!c))
-      ).sort();
-      setCategories(uniqueCategories);
+      setProducts(data || []);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast({
@@ -102,6 +96,21 @@ const AdminProducts = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name")
+        .order("name");
+
+      if (error) throw error;
+      
+      setCategories((data || []).map((c) => c.name));
+    } catch (error) {
+      console.error("Error fetching categories:", error);
     }
   };
 
