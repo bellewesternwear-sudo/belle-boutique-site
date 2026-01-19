@@ -26,6 +26,16 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { z } from "zod";
+
+// Validation schema for product editing
+const productSchema = z.object({
+  name: z.string().trim().min(1, "Product name is required").max(200, "Name must be less than 200 characters"),
+  code: z.string().trim().min(1, "Product code is required").max(50, "Code must be less than 50 characters"),
+  price: z.number().positive("Price must be greater than 0").max(10000000, "Price must be less than 10,000,000"),
+  description: z.string().trim().max(1000, "Description must be less than 1000 characters").optional().nullable(),
+  category: z.string().trim().max(100, "Category must be less than 100 characters").optional().nullable(),
+});
 
 interface Product {
   id: string;
@@ -108,17 +118,37 @@ const ManageProducts = () => {
 
   const handleSaveEdit = async () => {
     if (!editingProduct) return;
+    
+    // Validate the product data before saving
+    const validationResult = productSchema.safeParse({
+      name: editingProduct.name,
+      code: editingProduct.code,
+      price: editingProduct.price,
+      description: editingProduct.description || undefined,
+      category: editingProduct.category || undefined,
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors;
+      toast({
+        title: "Validation Error",
+        description: errors.map(e => e.message).join(", "),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
 
     try {
       const { error } = await supabase
         .from("products")
         .update({
-          name: editingProduct.name,
-          code: editingProduct.code,
-          price: editingProduct.price,
-          description: editingProduct.description,
-          category: editingProduct.category,
+          name: validationResult.data.name,
+          code: validationResult.data.code,
+          price: validationResult.data.price,
+          description: validationResult.data.description || null,
+          category: validationResult.data.category || null,
         })
         .eq("id", editingProduct.id);
 
@@ -290,36 +320,44 @@ const ManageProducts = () => {
           {editingProduct && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Product Name</Label>
+                <Label>Product Name *</Label>
                 <Input
                   value={editingProduct.name}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, name: e.target.value })
                   }
+                  maxLength={200}
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label>Product Code</Label>
+                <Label>Product Code *</Label>
                 <Input
                   value={editingProduct.code}
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, code: e.target.value })
                   }
+                  maxLength={50}
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label>Price (PKR)</Label>
+                <Label>Price (PKR) *</Label>
                 <Input
                   type="number"
                   value={editingProduct.price}
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
-                      price: parseFloat(e.target.value),
+                      price: parseFloat(e.target.value) || 0,
                     })
                   }
+                  min={0.01}
+                  max={10000000}
+                  step={0.01}
+                  required
                 />
               </div>
               
@@ -331,6 +369,7 @@ const ManageProducts = () => {
                     setEditingProduct({ ...editingProduct, category: e.target.value })
                   }
                   placeholder="e.g., Kurtis, Suits"
+                  maxLength={100}
                 />
               </div>
               
@@ -342,6 +381,7 @@ const ManageProducts = () => {
                     setEditingProduct({ ...editingProduct, description: e.target.value })
                   }
                   rows={4}
+                  maxLength={1000}
                 />
               </div>
             </div>
