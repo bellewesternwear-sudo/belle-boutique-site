@@ -15,7 +15,7 @@ interface Product {
   sizes: string[] | null;
 }
 
-const BestSellers = () => {
+const FeaturedProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +25,14 @@ const BestSellers = () => {
         const { data, error } = await supabase
           .from("products")
           .select("id, name, code, price, original_price, image_url, sizes")
-          .eq("is_best_seller", true)
+          .eq("is_featured", true)
           .order("created_at", { ascending: false })
           .limit(8);
 
         if (error) throw error;
         setProducts(data || []);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching featured products:", error);
       } finally {
         setLoading(false);
       }
@@ -56,19 +56,19 @@ const BestSellers = () => {
   }
 
   return (
-    <section className="py-20 px-4">
+    <section className="py-20 px-4 bg-muted/30">
       <div className="container mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold mb-4">Best Sellers</h2>
+          <h2 className="text-5xl md:text-6xl font-bold mb-4">New Arrivals</h2>
           <p className="text-lg text-muted-foreground">
-            The latest from our studio and workshop.
+            Discover our latest collection
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {products.map((product) => (
             <Link key={product.id} to={`/product/${product.id}`}>
-              <ProductCard 
+              <ProductCard
                 id={product.id}
                 image={product.image_url || product1}
                 name={product.name}
@@ -85,4 +85,4 @@ const BestSellers = () => {
   );
 };
 
-export default BestSellers;
+export default FeaturedProducts;
