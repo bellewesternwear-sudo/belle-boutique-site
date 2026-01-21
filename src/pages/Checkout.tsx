@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -16,6 +15,7 @@ import product1 from "@/assets/product-1.jpg";
 
 const checkoutSchema = z.object({
   customer_name: z.string().trim().min(1, "Name is required").max(100),
+  customer_email: z.string().trim().email("Please enter a valid email address").max(255),
   customer_phone: z.string().trim().min(10, "Please enter a valid phone number").max(20),
   customer_address: z.string().trim().min(10, "Please enter a complete address").max(500),
   customer_city: z.string().trim().min(1, "City is required").max(100),
@@ -23,19 +23,19 @@ const checkoutSchema = z.object({
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const { items, loading: cartLoading, getCartTotal, clearCart } = useCart();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     customer_name: "",
+    customer_email: "",
     customer_phone: "",
     customer_address: "",
     customer_city: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
-  if (authLoading || cartLoading) {
+  if (cartLoading) {
     return (
       <div className="min-h-screen">
         <Header />
@@ -45,11 +45,6 @@ const Checkout = () => {
         <Footer />
       </div>
     );
-  }
-
-  if (!user) {
-    navigate("/auth?redirect=/checkout");
-    return null;
   }
 
   if (items.length === 0) {
@@ -87,12 +82,12 @@ const Checkout = () => {
     setSubmitting(true);
 
     try {
-      // Create order
+      // Create order (guest order - no user_id)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
-          user_id: user.id,
           customer_name: formData.customer_name.trim(),
+          customer_email: formData.customer_email.trim(),
           customer_phone: formData.customer_phone.trim(),
           customer_address: formData.customer_address.trim(),
           customer_city: formData.customer_city.trim(),
@@ -123,7 +118,7 @@ const Checkout = () => {
       if (itemsError) throw itemsError;
 
       // Clear the cart
-      await clearCart();
+      clearCart();
 
       // Navigate to confirmation
       navigate(`/order-confirmation/${order.id}`);
@@ -170,6 +165,21 @@ const Checkout = () => {
                     }
                     placeholder="Enter your full name"
                     maxLength={100}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="customer_email">Email Address *</Label>
+                  <Input
+                    id="customer_email"
+                    type="email"
+                    value={formData.customer_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, customer_email: e.target.value })
+                    }
+                    placeholder="Enter your email address"
+                    maxLength={255}
                     required
                   />
                 </div>

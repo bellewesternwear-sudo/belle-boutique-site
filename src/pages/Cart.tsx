@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,34 +8,14 @@ import product1 from "@/assets/product-1.jpg";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const { items, loading, removeFromCart, updateQuantity, getCartTotal } = useCart();
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen">
         <Header />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <ShoppingBag className="h-16 w-16 mx-auto mb-6 text-muted-foreground" />
-          <h1 className="text-2xl font-bold mb-4">Login to View Your Cart</h1>
-          <p className="text-muted-foreground mb-8">
-            Please login to add items to your cart and checkout.
-          </p>
-          <Link to="/auth?redirect=/cart">
-            <Button size="lg">Login to Continue</Button>
-          </Link>
         </div>
         <Footer />
       </div>

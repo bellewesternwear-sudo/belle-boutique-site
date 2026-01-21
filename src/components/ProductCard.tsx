@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +22,6 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ id, image, name, code, price, originalPrice, sizes }: ProductCardProps) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const { addToCart } = useCart();
   const [adding, setAdding] = useState(false);
   const [showSizeDialog, setShowSizeDialog] = useState(false);
@@ -38,11 +34,6 @@ const ProductCard = ({ id, image, name, code, price, originalPrice, sizes }: Pro
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (!user) {
-      navigate(`/auth?redirect=/product/${id}`);
-      return;
-    }
 
     // If product has sizes, show size selector
     if (sizes && sizes.length > 0) {
