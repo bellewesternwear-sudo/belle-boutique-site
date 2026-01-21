@@ -32,6 +32,7 @@ import { format } from "date-fns";
 interface Order {
   id: string;
   customer_name: string;
+  customer_email: string | null;
   customer_phone: string;
   customer_address: string;
   customer_city: string;
@@ -339,6 +340,10 @@ const AdminOrders = () => {
                     <p className="font-medium">{selectedOrder.customer_name}</p>
                   </div>
                   <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-medium">{selectedOrder.customer_email || "N/A"}</p>
+                  </div>
+                  <div>
                     <p className="text-muted-foreground">Phone</p>
                     <p className="font-medium">{selectedOrder.customer_phone}</p>
                   </div>
@@ -346,7 +351,7 @@ const AdminOrders = () => {
                     <p className="text-muted-foreground">City</p>
                     <p className="font-medium">{selectedOrder.customer_city}</p>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <p className="text-muted-foreground">Address</p>
                     <p className="font-medium">{selectedOrder.customer_address}</p>
                   </div>

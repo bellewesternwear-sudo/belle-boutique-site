@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
-import { Search, ShoppingBag, Menu, User, Package, Shield } from "lucide-react";
+import { Search, ShoppingBag, Menu, Package, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const { isAdmin } = useAdminCheck();
   const { getCartCount } = useCart();
-  const { user } = useAuth();
 
   const cartCount = getCartCount();
 
@@ -41,11 +39,6 @@ const Header = () => {
               <Button variant="ghost" size="icon">
                 <Search className="h-5 w-5" />
               </Button>
-              <Link to={user ? "/auth" : "/auth"}>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
               <Link to="/cart">
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingBag className="h-5 w-5" />
